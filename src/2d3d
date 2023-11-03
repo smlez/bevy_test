@@ -1,0 +1,70 @@
+use bevy::{prelude::*, core_pipeline::clear_color::ClearColorConfig};
+use bevy_prototype_lyon::prelude::*;
+
+const SHOW_2D: bool = true;
+const SHOW_3D: bool = true;
+
+fn main() {
+    App::new()
+        .insert_resource(Msaa::Sample4)
+        .add_plugins(DefaultPlugins)
+        .add_plugin(ShapePlugin)
+        .add_startup_system(setup_system)
+        .run();
+}
+
+fn setup_system(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    if SHOW_2D {
+        let shape = shapes::RegularPolygon {
+            sides: 6,
+            feature: shapes::RegularPolygonFeature::Radius(200.0),
+            ..shapes::RegularPolygon::default()
+        };
+        commands.spawn(Camera2dBundle {
+            camera: Camera {
+                order: 1,
+                ..default()
+            },
+            camera_2d: Camera2d {
+                clear_color: ClearColorConfig::None,
+                ..default()
+            },
+            ..default()
+        });
+        commands.spawn((
+            ShapeBundle {
+                path: GeometryBuilder::build_as(&shape),
+                ..default()
+            },
+            Fill::color(Color::CYAN),
+            Stroke::new(Color::BLACK, 10.0),
+        ));
+    }
+
+    if SHOW_3D {
+        // cube
+        commands.spawn(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 2.0 })),
+            material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
+            ..Default::default()
+        });
+        // light
+        commands.spawn(PointLightBundle {
+            transform: Transform::from_xyz(4.0, 8.0, 4.0),
+            ..Default::default()
+        });
+        // camera
+        commands.spawn(Camera3dBundle {
+            transform: Transform::from_xyz(-3.0, 3.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+            camera: Camera {
+                order: 0,
+                ..default()
+            },
+            ..default()
+        });
+    }
+}
